@@ -1,0 +1,17 @@
+services:
+    web:
+        build:
+            context: ./frontend
+        image: web
+        container_name: web
+        ports: 
+            - 80:80
+        depends_on:
+            - backend
+    backend:
+        build: 
+            context: ./backend
+        image: backend
+        container_name: backend
+        ports: 
+            - 5001:5001
