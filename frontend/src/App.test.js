@@ -1,8 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
+import axios from 'axios';
 
-test('renders learn react link', () => {
+jest.mock('axios');
+
+test('renders message from backend', async () => {
+  // Mock API response
+  axios.get.mockResolvedValue({ data: { message: 'Hello from backend!' } });
+
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+
+  // Wait for the API data to be rendered
+  await waitFor(() => {
+    const messageElement = screen.getByText(/Hello from backend!/i);
+    expect(messageElement).toBeInTheDocument();
+  });
 });
