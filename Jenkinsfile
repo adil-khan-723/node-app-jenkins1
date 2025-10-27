@@ -34,22 +34,21 @@ pipeline {
 
         stage('frontend test') {
             steps {
-                echo "building the frontend test image"
+                echo 'building the frontend test image'
                 sh "docker build -t ${FB} --target build ./frontend"
                 sh "docker run --rm ${FB} npm test -- --watchAll=false"
-                echo "cleaning up the frontend test image"
+                echo 'cleaning up the frontend test image'
                 sh "docker rmi ${FB}"
-
             }
         }
 
         stage('backend test') {
             steps {
-                echo "building the backend test image"
+                echo 'building the backend test image'
                 sh "docker build -t ${BB} -f ./backend/Dockerfile_test ./backend"
-                sh "docker run --rm ${BB}"
-                echo "cleaning up the backend test image"
-                sh "docker rmi ${BB}" || true 
+                sh "timeout 30s docker run --rm ${BB} npm test -- --runInBand --forceExit"
+                echo 'cleaning up the backend test image'
+                sh "docker rmi ${BB}" || true
             }
         }
 
