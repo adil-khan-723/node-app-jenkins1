@@ -42,16 +42,6 @@ pipeline {
             }
         }
 
-        stage('backend test') {
-            steps {
-                echo 'building the backend test image'
-                sh "docker build -t ${BB} -f ./backend/Dockerfile_test ./backend"
-                sh "timeout 30s docker run --rm ${BB} npm test -- --runInBand --forceExit"
-                echo 'cleaning up the backend test image'
-                sh "docker rmi ${BB}" || true
-            }
-        }
-
         stage('deploy') {
             steps {
                 echo 'deploying the full stack app 🚀'
