@@ -46,8 +46,8 @@ pipeline {
         stage('backend test') {
             steps {
                 echo "building the backend test image"
-                sh "docker build -t ${BB} ./backend"
-                sh "docker run --rm ${BB} npm test"
+                sh "docker build -t ${BB} -f ./backend/Dockerfile_test ./backend"
+                sh "docker run --rm ${BB}"
                 echo "cleaning up the backend test image"
                 sh "docker rmi ${BB}" || true 
             }
