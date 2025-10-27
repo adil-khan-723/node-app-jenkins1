@@ -8,6 +8,8 @@ pipeline {
     environment {
         BACKEND = 'backend'
         FRONTEND = 'frontend'
+        FB = 'frontend_build'
+        BB = 'backend_build'
     }
 
     stages {
@@ -32,13 +34,22 @@ pipeline {
 
         stage('frontend test') {
             steps {
-                sh "docker run --rm ${FRONTEND} npm test"
+                echo "building the frontend test image"
+                sh "docker build -t ${FB} --target build ./frontend"
+                sh "docker run --rm ${FB} npm test -- --watchAll=false"
+                echo "cleaning up the frontend test image"
+                sh "docker rmi ${FB}"
+
             }
         }
 
         stage('backend test') {
             steps {
-                sh "docker run --rm ${BACKEND} npm test -- --watchAll=false"
+                echo "building the backend test image"
+                sh "docker build -t ${BB} ./backend"
+                sh "docker run --rm ${BB} npm test"
+                echo "cleaning up the backend test image"
+                sh "docker rmi ${BB}" || true 
             }
         }
 
