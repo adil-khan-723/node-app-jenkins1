@@ -36,13 +36,13 @@ pipeline {
             }
         }
 
-        steps('backend test') {
+        stage('backend test') {
             steps {
                 sh "docker run --rm ${BACKEND} npm test -- --watchAll=false"
             }
         }
 
-        steps('deploy') {
+        stage('deploy') {
             steps {
                 echo 'deploying the full stack app 🚀'
                 sh 'docker compose down'
