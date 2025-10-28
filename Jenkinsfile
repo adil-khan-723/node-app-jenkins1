@@ -45,8 +45,8 @@ pipeline {
         stage('deploy') {
             steps {
                 echo 'deploying the full stack app 🚀'
-                sh 'docker compose down'
-                sh 'docker compose up --build'
+                sh 'docker-compose down'
+                sh 'docker-compose up --build'
             }
         }
     }
