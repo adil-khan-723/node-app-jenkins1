@@ -10,6 +10,8 @@ pipeline {
         FRONTEND = 'frontend'
         FB = 'frontend_build'
         BB = 'backend_build'
+        EC2_IP = '43.204.102.186'
+        DIR = '/home/ubuntu/node-app-jenkins1'
     }
 
     stages {
@@ -42,11 +44,21 @@ pipeline {
             }
         }
 
-        stage('deploy') {
+        stage('deploy to ec2') {
             steps {
-                echo 'deploying the full stack app 🚀'
-                sh 'docker-compose down'
-                sh 'docker-compose up --build -d' 
+                sshagent(credentials: ['oggy-key']) {
+                    sh """ ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
+                        if [ -d "${DIR}" ]; then
+                            cd ${DIR} && git pull
+                        else 
+                            git clone https://github.com/adil-khan-723/node-app-jenkins1.git
+                        fi && \
+                        cd ${DIR} && \
+                        docker compose down && \
+                        docker compose up --build -d 
+                        '
+                    """
+                }
             }
         }
     }
