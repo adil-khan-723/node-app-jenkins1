@@ -2,7 +2,7 @@ FROM node:25 AS build
 
 WORKDIR /app
 
-COPY package*.json .
+COPY package*.json ./
 
 RUN npm ci --only=production
 
