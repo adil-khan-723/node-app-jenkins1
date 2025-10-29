@@ -10,7 +10,7 @@ pipeline {
         FRONTEND = 'frontend'
         FB = 'frontend_build'
         BB = 'backend_build'
-        EC2_IP = '43.204.102.186'
+        EC2_IP = '13.232.164.183'
         DIR = '/home/ubuntu/node-app-jenkins1'
     }
 
