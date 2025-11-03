@@ -46,7 +46,7 @@ pipeline {
 
         stage('deploy to ec2') {
             steps {
-                sshagent(credentials: ['oggy']) {
+                sshagent(credentials: ['ssh']) {
                     sh """ ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
                         if [ -d "${DIR}" ]; then
                             cd ${DIR} && git pull
