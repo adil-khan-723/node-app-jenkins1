@@ -53,6 +53,8 @@ pipeline {
                         else 
                             git clone https://github.com/adil-khan-723/node-app-jenkins1.git
                         fi && \
+
+                        docker system prune -af
                         cd ${DIR} && \
                         docker compose down && \
                         docker compose up --build -d 
