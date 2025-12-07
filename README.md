@@ -105,7 +105,7 @@ All AWS-sensitive values are masked:
         │       Frontend → http://internal-backend-alb/api/message         │
         │                                                                   │
         └───────────────────────────────────────────────────────────────────┘
-
+```
 Extra Components:
  ┌────────────────────────────────────────────────────────────────────────┐
  │ ECR (frontend + backend repos) for images                              │
@@ -113,9 +113,9 @@ Extra Components:
  │ VPC Endpoints (optional: ECR, S3, Logs)                                │
  │ NAT Gateway (only if FE needs Internet access)                         │
  └────────────────────────────────────────────────────────────────────────┘
-
+```
 ---------------------------------------------------------------------
-
+```
 # 📂 Repository Structure
 
 node-app-ecs-deployment/
@@ -136,7 +136,7 @@ node-app-ecs-deployment/
 └── ecs-task-definitions/
     ├── backend.json
     └── frontend.json
-
+```
 ---------------------------------------------------------------------
 
 # 🧪 Local Development (docker-compose)
@@ -179,13 +179,15 @@ docker build -t frontend .
 docker build -t backend .
 
 ### 2. Tag for ECR
+```
 docker tag frontend:latest xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/frontend-repo:latest
 docker tag backend:latest  xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/backend-repo:latest
-
+```
 ### 3. Push to ECR
+```
 aws ecr get-login-password | docker login …
 docker push …
-
+```
 ### 4. Create Task Definitions (console)
 - Add container ports  
 - Use awsvpc mode  
