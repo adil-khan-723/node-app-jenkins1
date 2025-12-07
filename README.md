@@ -1,127 +1,308 @@
-# DevOps Full Stack Project (React + Node + Docker)
+# 🚀 Multi-Tier ECS Fargate Deployment (React Frontend + Node Backend)
 
-This project demonstrates a simple **Full Stack Application** setup with **React (frontend)**, **Node.js (backend)**, and **MongoDB**, all containerized with **Docker** and orchestrated via **Docker Compose**.
+This project is a fully containerized **multi-tier application** deployed on **AWS ECS Fargate**, powered by a complete **CI/CD pipeline using Jenkins**, **Docker**, and **Amazon ECR**.  
+It follows real production standards: secure IAM roles, isolated VPC networking, ALB routing, rolling deployments, and CloudWatch logging.
 
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-Make sure you have the following installed:
-- Docker & Docker Compose  
-- Node.js (optional, for local testing)  
-- Git  
+All sensitive values such as **AWS Account ID**, **region**, **ECR URIs**, **ALB DNS**, **cluster names**, and **service names** are masked.
 
 ---
 
-## 📁 Project Overview
+# 🏗️ Architecture Overview
 
-- **Frontend:** React app  
-- **Backend:** Node.js + Express + MongoDB  
-- **Database:** MongoDB (Docker container)  
-- **Reverse Proxy:** Optional Nginx (can be added later)  
+This project consists of:
+
+### **Compute**
+- AWS ECS Fargate Cluster  
+- Two ECS Services:
+  - **frontend-service** (React → served via Nginx)
+  - **backend-service** (Node.js API)
+- Each service runs as a separate **Task Definition**
+
+### **Networking**
+- VPC with public + private subnets  
+- **Public ALB** → routes to Frontend tasks  
+- **Internal ALB** → routes to Backend tasks  
+- Security-groups-based tier isolation  
+- NAT Gateway or VPC Endpoints for private subnets  
+
+### **Container Registry**
+- Amazon ECR repositories:
+  - `frontend-repo` → `xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/frontend-repo`
+  - `backend-repo`  → `xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/backend-repo`
+
+### **IAM**
+- ECS Task Execution Role  
+- ECS Task Role  
+- Jenkins EC2 IAM Role  
+- Least-privilege access for ECR, ECS, CloudWatch
+
+### **CI/CD**
+- Jenkins pipeline:
+  - Clone repo  
+  - Build Docker images  
+  - Tag + Push to ECR  
+  - Update ECS task definitions  
+  - Trigger rolling deployment  
+  - Health-checked release  
 
 ---
 
-## 🧩 Setup Instructions
+# 🖼️ Architecture Diagram
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/devops-fullstack-app.git
-cd devops-fullstack-app
+```
+Insert your architecture diagram here:
+![Architecture](./architecture.png)
 ```
 
-### 2. Folder Structure
+---
+
+# 📂 Repository Structure
+
 ```
-frontend/     → React app
-backend/      → Node.js + Express app
-docker-compose.yml
+node-app-ecs-deployment/
+│
+├── backend/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── server.js
+│   ├── routes/
+│   └── tests/
+│
+├── frontend/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── package-lock.json
+│   └── src/
+│       ├── App.js
+│       ├── index.js
+│       └── …
+│
+├── docker-compose.yml
+│
+├── Jenkinsfile
+├── Jenkinsfile_local
+├── Jenkinsfile_local_deploy
+│
+└── ecs-task-definitions/
+    ├── backend.json
+    └── frontend.json
 ```
 
 ---
 
-## 🐳 Docker Setup
+# 🧪 Local Development (docker-compose)
 
-### 3. Build and Run Containers
-From the project root directory:
-```bash
+Run both services locally:
+
+```
 docker-compose up --build
 ```
 
-### 4. Access the App
-- Frontend: http://localhost:3000  
-- Backend API: http://localhost:5000  
+- Frontend → http://localhost:3000  
+- Backend → http://localhost:5001  
+- Internal API calls tested locally  
 
 ---
 
-## ⚙️ Environment Variables
+# 🐳 Dockerfiles
 
-You can configure your own `.env` files for:
-- `frontend/.env`
-- `backend/.env`
+### **Backend Dockerfile**
 
-Example for backend `.env`:
-```
-MONGO_URI=mongodb://mongo:27017/mydb
-PORT=5000
-```
+- Base: `node:18-alpine`  
+- Install dependencies  
+- Copy code  
+- Expose port `5001`  
+- Start Node server  
 
----
+### **Frontend Dockerfile (Multi-Stage)**
 
-## 🔧 Docker Compose Overview
-
-The `docker-compose.yml` connects:
-- **frontend** → built from `frontend/Dockerfile`
-- **backend** → built from `backend/Dockerfile`
-- **mongo** → official MongoDB image
-
-Ensure to include the `depends_on` property:
-```yaml
-depends_on:
-  - backend
-  - mongo
-```
+- Stage 1: Build React  
+- Stage 2: Serve using Nginx  
+- Expose port `80`  
 
 ---
 
-## 🧾 Git Ignore Setup
+# 🔐 Image Tagging Strategy
 
-### Frontend:
-`.gitignore` automatically created by `create-react-app`.
-
-### Backend:
-Manually create a `.gitignore` file with:
-```
-node_modules/
-.env
-```
+- `latest`  
+- `build-${BUILD_NUMBER}`  
+- `${GIT_COMMIT}`  
 
 ---
 
-## 🧹 Cleanup
+# 🔄 CI/CD Pipeline (Jenkins → ECR → ECS)
 
-To stop and remove all containers:
-```bash
-docker-compose down
+### **Pipeline Stages**
+1. Checkout code  
+2. Install backend dependencies  
+3. Install frontend dependencies  
+4. Build Docker images  
+5. Tag & Push images to ECR  
+6. Register updated ECS task definitions  
+7. Update ECS services  
+8. Rolling deployment with ALB health checks  
+
+### **Masked Env Vars (example)**
 ```
-
-To remove volumes as well:
-```bash
-docker-compose down -v
+AWS_REGION=xx-xxxx-x
+AWS_ACCOUNT_ID=xxxxxxxxxxxx
+FRONTEND_ECR=xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/frontend-repo
+BACKEND_ECR=xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/backend-repo
+ECS_CLUSTER=ecs-cluster-xxxxx
+FRONTEND_SERVICE=frontend-svc-xxxxx
+BACKEND_SERVICE=backend-svc-xxxxx
 ```
 
 ---
 
-## 🧠 Notes
+# 🧩 ECS Task Definitions (Masked Examples)
 
-- Make sure ports `3000`, `5000`, and `27017` are free before running.  
-- Use `.env` files for sensitive data.  
-- You can extend this project with Nginx, CI/CD, and testing workflows.
+### **frontend.json**
+```
+{
+  "family": "frontend-task-xxxxx",
+  "executionRoleArn": "arn:aws:iam::xxxxxxxxxxxx:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::xxxxxxxxxxxx:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "frontend",
+      "image": "xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/frontend-repo:latest",
+      "portMappings": [{ "containerPort": 80 }],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-region": "xx-xxxx-x",
+          "awslogs-group": "/ecs/frontend",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512"
+}
+```
+
+### **backend.json**
+```
+{
+  "family": "backend-task-xxxxx",
+  "executionRoleArn": "arn:aws:iam::xxxxxxxxxxxx:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::xxxxxxxxxxxx:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/backend-repo:latest",
+      "portMappings": [{ "containerPort": 5001 }],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-region": "xx-xxxx-x",
+          "awslogs-group": "/ecs/backend",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512"
+}
+```
 
 ---
 
-## 🧰 Tech Stack
-- React  
-- Node.js + Express  
-- MongoDB  
-- Docker + Docker Compose  
+# 🔒 Security Group Design (All Masked)
+
+### **Frontend SG (`sg-frontend-xxxxx`)**
+- Inbound:
+  - `80` from ALB SG (`sg-alb-public-xxxxx`)
+- Outbound:
+  - `80` to backend SG
+
+### **Backend SG (`sg-backend-xxxxx`)**
+- Inbound:
+  - `5001` from frontend SG
+- Outbound:
+  - NAT or VPC endpoint
+
+### **ALB Public SG (`sg-alb-public-xxxxx`)**
+- Inbound: `80` from `0.0.0.0/0`
+
+### **ALB Internal SG (`sg-alb-internal-xxxxx`)**
+- Inbound: `80` from frontend SG
+
+---
+
+# 🌐 VPC & Networking
+
+### **VPC CIDR**
+```
+10.0.0.0/16
+```
+
+### **Subnets**
+- Public Subnets → ALB  
+- Private Subnets → ECS tasks  
+
+### **Routing**
+- Public Route Table → IGW  
+- Private Route Table → NAT or VPC endpoints  
+
+### **Optional Endpoints**
+- ECR  
+- S3  
+- Logs  
+
+---
+
+# 📊 Rolling Deployment Behavior
+
+- **desiredCount:** 2  
+- **minHealthyPercent:** 100  
+- **maxPercent:** 200  
+
+Flow:
+1. New tasks start  
+2. ALB waits for health checks  
+3. Old tasks drain  
+4. Traffic shifts  
+5. Zero downtime  
+
+---
+
+# 📸 Screenshots (Add Later)
+
+Add:
+- ECS service page  
+- Target groups  
+- Healthy tasks  
+- Jenkins pipeline  
+- ALB output  
+- Frontend running  
+
+---
+
+# 📘 What I Learned
+
+- Multi-tier architecture  
+- Inter-service communication via internal ALB  
+- Secure IAM role patterns (execution vs task role)  
+- CI/CD for microservices using Jenkins  
+- ECS Fargate task definitions  
+- Rolling deployments with ALB  
+- Containerization of full-stack apps  
+- VPC networking + subnet isolation  
+
+---
+
+# 📌 Notes
+
+- All AWS ARNs, DNS names, ECR URIs, cluster/service names, and account IDs are masked for security.
+- Replace masked placeholders after deployment.
+
+---
