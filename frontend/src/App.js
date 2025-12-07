@@ -5,7 +5,7 @@ function App() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    axios.get('http://13.232.164.183:5001/api/message')
+    axios.get('http://internal-alb-backend-664704932.ap-southeast-2.elb.amazonaws.com/api/message')
       .then(res => setMessage(res.data.message))
       .catch(err => console.error(err));
   }, []);
