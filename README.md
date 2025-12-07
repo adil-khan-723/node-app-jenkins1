@@ -1,56 +1,60 @@
 # 🚀 Multi-Tier ECS Fargate Deployment (React Frontend + Node Backend)
 
-This project is a fully containerized **multi-tier application** deployed on **AWS ECS Fargate**, powered by a complete **CI/CD pipeline using Jenkins**, **Docker**, and **Amazon ECR**.  
-It follows real production standards: secure IAM roles, isolated VPC networking, ALB routing, rolling deployments, and CloudWatch logging.
+This project is a fully containerized **multi-tier application** deployed on **AWS ECS Fargate**, including:
+- React Frontend
+- Node.js Backend API
+- Public and Internal ALBs
+- Secure VPC architecture
+- Private networking
+- Manual deployments through AWS Console only
 
-All sensitive values such as **AWS Account ID**, **region**, **ECR URIs**, **ALB DNS**, **cluster names**, and **service names** are masked.
+This project demonstrates production-grade AWS knowledge:  
+VPC networking, subnets, ALBs, ECR, ECS Fargate, IAM, security groups, load balancing, internal service communication, and rolling updates.
 
----
+All AWS-sensitive values are masked:  
+**AWS Account ID**, **region**, **ECR URIs**, **ALB DNS**, **cluster names**, **service names**.
 
-# 🏗️ Architecture Overview
+---------------------------------------------------------------------
 
-This project consists of:
+# 🏗️ Architecture Overview (Console Deployment)
 
 ### **Compute**
-- AWS ECS Fargate Cluster  
-- Two ECS Services:
-  - **frontend-service** (React → served via Nginx)
-  - **backend-service** (Node.js API)
-- Each service runs as a separate **Task Definition**
+- ECS Fargate Cluster  
+- `frontend-service` – runs React 
+- `backend-service` – runs Node.js API  
+- Each deployed using **AWS Console → Task Definition → Service → Deploy**
 
 ### **Networking**
-- VPC with public + private subnets  
-- **Public ALB** → routes to Frontend tasks  
-- **Internal ALB** → routes to Backend tasks  
-- Security-groups-based tier isolation  
-- NAT Gateway or VPC Endpoints for private subnets  
+- 1 VPC → 10.0.0.0/16
+- 2 Public Subnets (Frontend)
+- 2 Private Subnets (Backend)
+- Public ALB → Frontend Tasks
+- Internal ALB → Backend Tasks
+- Frontend → Backend communication via internal ALB DNS
+- NAT/VPC Endpoints (optional)
 
 ### **Container Registry**
-- Amazon ECR repositories:
-  - `frontend-repo` → `xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/frontend-repo`
-  - `backend-repo`  → `xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/backend-repo`
+- Two ECR repositories:
+  - `frontend-repo`
+  - `backend-repo`
 
 ### **IAM**
 - ECS Task Execution Role  
 - ECS Task Role  
-- Jenkins EC2 IAM Role  
-- Least-privilege access for ECR, ECS, CloudWatch
+- EC2/Jenkins roles (optional for image builds)
 
-### **CI/CD**
-- Jenkins pipeline:
-  - Clone repo  
-  - Build Docker images  
-  - Tag + Push to ECR  
-  - Update ECS task definitions  
-  - Trigger rolling deployment  
-  - Health-checked release  
+### **Deployment Method**
+- **Everything deployed manually using the AWS Console**
+- Docker images built on EC2 and pushed to ECR manually  
+- Tasks and Services created through ECS Console  
+- Load balancers created through EC2 Console  
+- Target groups configured manually  
+- No automatic CI/CD is used in this project
 
----
+---------------------------------------------------------------------
 
-# 🖼️ Architecture Diagram
+# 🖼️ Architecture Diagram (ASCII)
 
-```
-Insert your architecture diagram here:
                           ┌──────────────────────────┐
                           │         Internet         │
                           └──────────────────────────┘
@@ -105,261 +109,167 @@ Insert your architecture diagram here:
 Extra Components:
  ┌────────────────────────────────────────────────────────────────────────┐
  │ ECR (frontend + backend repos) for images                              │
- │ IAM Task Role for image pulls                                          │
- │ VPC Endpoints (optional: ECR, S3, Logs) for private-only networking    │
- │ NAT Gateway (only if FE needs outbound Internet)                       │
+ │ IAM Task Role for ECR pull                                             │
+ │ VPC Endpoints (optional: ECR, S3, Logs)                                │
+ │ NAT Gateway (only if FE needs Internet access)                         │
  └────────────────────────────────────────────────────────────────────────┘
-```
 
----
+---------------------------------------------------------------------
 
 # 📂 Repository Structure
 
-```
 node-app-ecs-deployment/
 │
 ├── backend/
 │   ├── Dockerfile
 │   ├── package.json
-│   ├── package-lock.json
 │   ├── server.js
-│   ├── routes/
-│   └── tests/
+│   └── routes/
 │
 ├── frontend/
 │   ├── Dockerfile
 │   ├── package.json
-│   ├── package-lock.json
 │   └── src/
-│       ├── App.js
-│       ├── index.js
-│       └── …
 │
 ├── docker-compose.yml
-│
-├── Jenkinsfile
-├── Jenkinsfile_local
-├── Jenkinsfile_local_deploy
-│
+├── Jenkinsfile_local (optional)
 └── ecs-task-definitions/
     ├── backend.json
     └── frontend.json
-```
 
----
+---------------------------------------------------------------------
 
 # 🧪 Local Development (docker-compose)
 
 Run both services locally:
 
-```
 docker-compose up --build
-```
 
 - Frontend → http://localhost:3000  
 - Backend → http://localhost:5001  
-- Internal API calls tested locally  
+- React → Node API tested locally  
 
----
+---------------------------------------------------------------------
 
-# 🐳 Dockerfiles
+# 🐳 Dockerfiles Overview
 
-### **Backend Dockerfile**
+### Backend Dockerfile
+- Node.js 18 Alpine  
+- Installs dependencies  
+- Exposes port 5001  
 
-- Base: `node:18-alpine`  
-- Install dependencies  
-- Copy code  
-- Expose port `5001`  
-- Start Node server  
+### Frontend Dockerfile (Multi-Stage)
+- Stage 1: React build  
+- Stage 2: Nginx serving static files  
+- Exposes port 80  
 
-### **Frontend Dockerfile (Multi-Stage)**
-
-- Stage 1: Build React  
-- Stage 2: Serve using Nginx  
-- Expose port `80`  
-
----
+---------------------------------------------------------------------
 
 # 🔐 Image Tagging Strategy
+- latest  
+- build-{timestamp}  
+- commit-hash  
 
-- `latest`  
-- `build-${BUILD_NUMBER}`  
-- `${GIT_COMMIT}`  
+---------------------------------------------------------------------
 
----
+# 📦 Manual Deployment Flow (AWS Console Only)
 
-# 🔄 CI/CD Pipeline (Jenkins → ECR → ECS)
+### 1. Build Docker images (EC2 or local)
+docker build -t frontend .
+docker build -t backend .
 
-### **Pipeline Stages**
-1. Checkout code  
-2. Install backend dependencies  
-3. Install frontend dependencies  
-4. Build Docker images  
-5. Tag & Push images to ECR  
-6. Register updated ECS task definitions  
-7. Update ECS services  
-8. Rolling deployment with ALB health checks  
+### 2. Tag for ECR
+docker tag frontend:latest xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/frontend-repo:latest
+docker tag backend:latest  xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/backend-repo:latest
 
-### **Masked Env Vars (example)**
-```
-AWS_REGION=xx-xxxx-x
-AWS_ACCOUNT_ID=xxxxxxxxxxxx
-FRONTEND_ECR=xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/frontend-repo
-BACKEND_ECR=xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/backend-repo
-ECS_CLUSTER=ecs-cluster-xxxxx
-FRONTEND_SERVICE=frontend-svc-xxxxx
-BACKEND_SERVICE=backend-svc-xxxxx
-```
+### 3. Push to ECR
+aws ecr get-login-password | docker login …
+docker push …
 
----
+### 4. Create Task Definitions (console)
+- Add container ports  
+- Use awsvpc mode  
+- Assign task roles  
 
-# 🧩 ECS Task Definitions (Masked Examples)
+### 5. Create Target Groups (frontend TG + backend TG)
 
-### **frontend.json**
-```
-{
-  "family": "frontend-task-xxxxx",
-  "executionRoleArn": "arn:aws:iam::xxxxxxxxxxxx:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::xxxxxxxxxxxx:role/ecsTaskRole",
-  "containerDefinitions": [
-    {
-      "name": "frontend",
-      "image": "xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/frontend-repo:latest",
-      "portMappings": [{ "containerPort": 80 }],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-region": "xx-xxxx-x",
-          "awslogs-group": "/ecs/frontend",
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    }
-  ],
-  "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
-  "cpu": "256",
-  "memory": "512"
-}
-```
+### 6. Create ALBs  
+- Public ALB → Frontend TG  
+- Internal ALB → Backend TG  
 
-### **backend.json**
-```
-{
-  "family": "backend-task-xxxxx",
-  "executionRoleArn": "arn:aws:iam::xxxxxxxxxxxx:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::xxxxxxxxxxxx:role/ecsTaskRole",
-  "containerDefinitions": [
-    {
-      "name": "backend",
-      "image": "xxxxxxxxxxxx.dkr.ecr.xx-xxxx-x.amazonaws.com/backend-repo:latest",
-      "portMappings": [{ "containerPort": 5001 }],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-region": "xx-xxxx-x",
-          "awslogs-group": "/ecs/backend",
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    }
-  ],
-  "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
-  "cpu": "256",
-  "memory": "512"
-}
-```
+### 7. Create ECS Services (console)
+- frontend-service in public subnets  
+- backend-service in private subnets  
+- Attach correct ALB target groups  
+- Set desired count = 2  
 
----
+### 8. Test Routing  
+- Frontend calls backend via ALB:
+  http://internal-backend-alb/api/message
 
-# 🔒 Security Group Design (All Masked)
+---------------------------------------------------------------------
 
-### **Frontend SG (`sg-frontend-xxxxx`)**
-- Inbound:
-  - `80` from ALB SG (`sg-alb-public-xxxxx`)
-- Outbound:
-  - `80` to backend SG
+# 🔒 Security Group Rules
 
-### **Backend SG (`sg-backend-xxxxx`)**
-- Inbound:
-  - `5001` from frontend SG
-- Outbound:
-  - NAT or VPC endpoint
+### Frontend SG
+Inbound:
+- 80 from ALB Public SG
 
-### **ALB Public SG (`sg-alb-public-xxxxx`)**
-- Inbound: `80` from `0.0.0.0/0`
+Outbound:
+- 80 to Backend SG
 
-### **ALB Internal SG (`sg-alb-internal-xxxxx`)**
-- Inbound: `80` from frontend SG
+### Backend SG
+Inbound:
+- 5001 from Frontend SG
 
----
+Outbound:
+- NAT or VPC endpoints
 
-# 🌐 VPC & Networking
+### Public ALB SG
+Inbound:
+- 80 from world (0.0.0.0/0)
 
-### **VPC CIDR**
-```
-10.0.0.0/16
-```
+### Internal ALB SG
+Inbound:
+- 80 from Frontend SG
 
-### **Subnets**
-- Public Subnets → ALB  
-- Private Subnets → ECS tasks  
+---------------------------------------------------------------------
 
-### **Routing**
-- Public Route Table → IGW  
-- Private Route Table → NAT or VPC endpoints  
+# 📊 Rolling Deployment Behavior (Console)
 
-### **Optional Endpoints**
-- ECR  
-- S3  
-- Logs  
+- desiredCount: 2  
+- minHealthyPercent: 100  
+- maxPercent: 200  
 
----
+AWS launched new tasks → waits for health → drains old → replaces → zero downtime.
 
-# 📊 Rolling Deployment Behavior
+---------------------------------------------------------------------
 
-- **desiredCount:** 2  
-- **minHealthyPercent:** 100  
-- **maxPercent:** 200  
+# 📸 Screenshots (to add)
+- ALB page  
+- ECS service  
+- Task health  
+- Private subnets  
+- React frontend output  
 
-Flow:
-1. New tasks start  
-2. ALB waits for health checks  
-3. Old tasks drain  
-4. Traffic shifts  
-5. Zero downtime  
+---------------------------------------------------------------------
 
----
+# 📘 Learnings
 
-# 📸 Screenshots (Add Later)
+- Multi-tier AWS architecture  
+- Inter-service communication through Internal ALB  
+- Secure private/public subnet design  
+- ECS task design  
+- ALB listener rules  
+- Zero downtime deployments  
+- Networking fundamentals: SG, TG, ALB, subnets  
+- Real-world Docker → ECR → ECS flow  
 
-Add:
-- ECS service page  
-- Target groups  
-- Healthy tasks  
-- Jenkins pipeline  
-- ALB output  
-- Frontend running  
-
----
-
-# 📘 What I Learned
-
-- Multi-tier architecture  
-- Inter-service communication via internal ALB  
-- Secure IAM role patterns (execution vs task role)  
-- CI/CD for microservices using Jenkins  
-- ECS Fargate task definitions  
-- Rolling deployments with ALB  
-- Containerization of full-stack apps  
-- VPC networking + subnet isolation  
-
----
+---------------------------------------------------------------------
 
 # 📌 Notes
 
-- All AWS ARNs, DNS names, ECR URIs, cluster/service names, and account IDs are masked for security.
-- Replace masked placeholders after deployment.
+- All ARNs, IDs, DNS names are masked.  
+- Replace placeholders in your own deployment.
 
----
+---------------------------------------------------------------------
